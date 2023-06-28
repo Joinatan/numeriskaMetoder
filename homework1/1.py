@@ -63,7 +63,7 @@ for i, x in enumerate(range(1, ns+1)):
 ax3[0].set_title("Error of approximation (1.41)")
 ax3[0].set_xlabel("n")
 ax3[0].plot(nList, n2)
-# plt.show()
+plt.show()
 
 #uppgift 4
 plt.figure(2)
