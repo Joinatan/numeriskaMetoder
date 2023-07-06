@@ -10,7 +10,7 @@ class Interval:
             self.rpoint = rpoint
 
     def __contains__(self, number):
-        if number > self.lpoint and number < self.rpoint:
+        if number >= self.lpoint and number <= self.rpoint:
             return True
         else:
             return False
@@ -20,25 +20,25 @@ class Interval:
 
     def __add__(a, other):
         if isinstance(other, Interval):
-            return (a.lpoint + other.lpoint, a.rpoint + other.rpoint)
+            return Interval(a.lpoint + other.lpoint, a.rpoint + other.rpoint)
         elif isinstance(other, float) or isinstance(other, int):
-            return (a.lpoint + other, a.rpoint + other)
+            return Interval(a.lpoint + other, a.rpoint + other)
 
     def __radd__(a, other):
-        return a + other 
+        return Interval(a + other)
 
     def __sub__(a, other):
         if isinstance(other, Interval):
-            return (a.lpoint - other.rpoint, a.rpoint - other.lpoint)
+            return Interval(a.lpoint - other.rpoint, a.rpoint - other.lpoint)
         elif isinstance(other, float) or isinstance(other, int):
-            return (a.lpoint - other, a.rpoint - other)
+            return Interval(a.lpoint - other, a.rpoint - other)
 
     def __rsub__(a, other):
-        return a - other
+        return Interval(a - other)
 
     def __mul__(a, other):
         if isinstance(other, Interval):
-            return (min(
+            return Interval(min(
                 a.rpoint * other.rpoint,     
                 a.rpoint * other.lpoint,
                 a.lpoint * other.rpoint,     
@@ -50,13 +50,13 @@ class Interval:
                 a.lpoint * other.lpoint
                 ))
         elif isinstance(other, float) or isinstance(other, int):
-            return (a.lpoint * other, a.rpoint * other)
-    def __rmul__(a, other):
-        return a * other
+            return Interval(min(a.lpoint * other, a.rpoint * other), max(a.lpoint * other, a.rpoint * other))
+    def __rmul__(self, other):
+        return Interval(self.lpoint, self.rpoint) * other
 
     def __truediv__(a, b):
         if b.rpoint and b.lpoint != 0:
-            return (min(
+            return Interval(min(
                 a.rpoint / b.rpoint,     
                 a.rpoint / b.lpoint,
                 a.lpoint / b.rpoint,     
@@ -71,25 +71,48 @@ class Interval:
             raise Exception("zero zero")
 
     def __neg__(self):
-        return (self.rpoint * -1, self.lpoint * -1)
+        return Interval(self.rpoint * -1, self.lpoint * -1)
 
-    def __pow__(self, other):
-        if other % 2 == 1:
-            return (self.lpoint**other, self.rpoint**other)
+    def __pow__(self, exponent):
+        if exponent % 2 == 1:
+            return Interval(self.lpoint**exponent, self.rpoint**exponent)
+        elif self.lpoint >= 0:
+            return Interval(self.lpoint**exponent, self.rpoint**exponent)
+        elif self.rpoint < 0:
+            return Interval(self.rpoint**exponent, self.lpoint**exponent)
         else:
-            return "hej"
+            return Interval(0, max(self.lpoint**exponent, self.rpoint**exponent))
 
 
-A = Interval(2, 2)
+
+A = Interval(2, 4)
 B = Interval(-2, -1)
 C = Interval(4)
 
-print(A**5)
+xl = np.linspace(0., 1, 1000)
+xu = np.linspace(0., 1, 1000)+0.5
+intervalList = []
 
-# print(A+B)
-# print(A-B)
-# print(A*B)
-# print(A/B)
-#
-# print(A)
-# print(A.__contains__(9))
+for i, l in enumerate(xl):
+    interval = Interval(xl[i], xu[i])
+    intervalList.append(interval)
+
+polynomialList = []
+for i, interval in enumerate(intervalList):
+    polynomialList.append(3*intervalList[i]**3 - 2*intervalList[i]**2 - 5 * intervalList[i] - 1)
+
+
+lowerBounds = []
+upperBounds = []
+for i, x in enumerate(polynomialList):
+    lowerBounds.append(polynomialList[i].lpoint)
+    upperBounds.append(polynomialList[i].rpoint)
+
+
+plt.title(r'$p(I) = 3I^{3} - 2I^2 - 5I - 1$')
+plt.ylabel('p(I')
+plt.plot(xl, upperBounds, label='Upper bounds')
+plt.plot(xl, lowerBounds, label='Lower bounds')
+plt.legend()
+plt.show()
+
