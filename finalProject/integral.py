@@ -7,24 +7,25 @@ class Mesh:
     First argument is coordinates and second is triangle elements
     '''
     triangles = []
-    jacobians = []
+    jacobianList = []
 
     def __init__(self, coordinates, elements):
         self.coordinates = coordinates
         self.elements = elements
         # print(self.coordinates)
         # print(self.elements)
+        self.__determinant()
         self.__createTriangle()
-        # self.__determinant()
 
     def __determinant(self):
-        for i in range(len(self.coordinates[0])):
-            # if np.isclose(self.minAngle(i), 0.0):
-            #     raise Exception("Too small angle") 
-            self.jacobians.append(self.jacobian(i))
+        # print(len(self.coordinates[0]))
+        for i in range(len(self.elements[0])):
+            if np.isclose(self.minAngle(i), 0.0):
+                raise ValueError("Too small angle") 
+            self.jacobianList.append(self.computeJacobian(i))
         
 
-    def jacobian(self, elementIndex):
+    def computeJacobian(self, elementIndex):
         upperL = self.coordinates[0][int(self.elements[1][elementIndex])-1] - self.coordinates[0][int(self.elements[0][elementIndex])-1]
         upperR = self.coordinates[0][int(self.elements[2][elementIndex])-1] - self.coordinates[0][int(self.elements[0][elementIndex])-1]
 
@@ -32,7 +33,7 @@ class Mesh:
         lowerR = self.coordinates[1][int(self.elements[2][elementIndex])-1] - self.coordinates[1][int(self.elements[0][elementIndex])-1]
         matrix = np.array([[upperL, upperR],
                   [lowerL, lowerR]])
-        return np.linalg.det(matrix)
+        return np.abs(np.linalg.det(matrix))
 
     def minAngle(self, elementIndex):
         #create x.s and y.s
@@ -41,9 +42,9 @@ class Mesh:
         pointB = np.array([self.coordinates[0][int(self.elements[1][elementIndex])-1], self.coordinates[1][int(self.elements[1][elementIndex])-1]])
         pointC = np.array([self.coordinates[0][int(self.elements[2][elementIndex])-1], self.coordinates[1][int(self.elements[2][elementIndex])-1]])
 
-        print("A: ", pointA)
-        print("B: ", pointB)
-        print("C: ", pointC)
+        # print("A: ", pointA)
+        # print("B: ", pointB)
+        # print("C: ", pointC)
         #first angle
         edgeAB = pointB - pointA
         edgeAB = edgeAB / np.linalg.norm(edgeAB)
@@ -66,24 +67,82 @@ class Mesh:
         edgeCB = edgeCB / np.linalg.norm(edgeCB)
         angleC = np.arccos(np.clip((edgeCA @ edgeCB), -1, 1))
 
-
-        
         return min(angleA, angleB, angleC)
+
     def plotTriangles(self):
         # plt.fill(self.coordinates[0])
+        colors = ('red', 'purple', 'black', 'pink', 'blue', 'orange')
+        randNr = 0
         for i in range(len(self.triangles)):
-            plt.fill(np.hsplit(self.triangles[i],2)[0], np.hsplit(self.triangles[i],2)[1])
+            randNr = np.random.randint(0, len(colors))
+            plt.fill(np.hsplit(self.triangles[i],2)[0], np.hsplit(self.triangles[i],2)[1], facecolor='none', edgecolor=colors[randNr], linestyle=(0,(5, 10)), linewidth=1)
             # plt.fill(self.triangles[i])
         plt.show()
 
     def __createTriangle(self):
+        '''
+        Stores each triangle in a matrix [[x1, y1],
+                                            [x2, y2]
+        '''
         # self.triangles = [len(self.coordinates[0])]
+        # print("elements: ", self.elements[0])
         for i, item in enumerate(self.elements[0]):
             self.triangles.append(np.array([
                     [self.coordinates[0][int(self.elements[0][i])-1], self.coordinates[1][int(self.elements[0][i])-1]],
                     [self.coordinates[0][int(self.elements[1][i])-1], self.coordinates[1][int(self.elements[1][i])-1]],
                     [self.coordinates[0][int(self.elements[2][i])-1], self.coordinates[1][int(self.elements[2][i])-1]]
                     ]))
+
+    def transForm(self, f, index):
+        x_1 = self.triangles[index][0][0]
+        x_2 = self.triangles[index][1][0]
+        x_3 = self.triangles[index][2][0]
+        y_1 = self.triangles[index][0][1]
+        y_2 = self.triangles[index][1][1]
+        y_3 = self.triangles[index][2][1]
+        # print("x_1: ", x_1)
+        # print("y_1: ", y_1)
+        # print("x_2: ", x_2)
+        # print("y_2: ", y_2)
+        # print("x_3: ", x_3)
+        # print("y_3: ", y_3)
+        # print("x, y ->", x_3, y_3)
+        def tranfsformedFunc(e, n):
+            x_e = x_1 +(x_2 - x_1)*e + (x_3 - x_1)*n
+            y_n = y_1 +(y_2 - y_1)*e + (y_3 - y_1)*n
+            # print("X_e: ", x_e)
+            # print("Y_e: ", y_n)
+            result = f(x_e, y_n)
+            return result
+        return tranfsformedFunc
+
+    def approximanteIntegral(self, f):
+        sum = 0.
+        for index in range(len(self.elements[0])):
+            transformedF = self.transForm(f, index)
+            # print("0,0: " ,transformedF(0,0))
+            # print("0,1: ", transformedF(1,0))
+            # print("1,0: ", transformedF(0,1))
+            approxIntegral = (1/2) * self.jacobianList[index] * ((1/3) * transformedF(0., 0.) + (1/3) * transformedF(0., 1.) + (1/3) * transformedF(1., 0.))
+            sum += approxIntegral
+            # print("JACOB: ", self.jacobianList[index])
+            # print("APPROX: ", approxIntegral)
+            # print("SUM: ", sum)
+
+        return sum
+
+    def triangleArea(self, index):
+        matrix = np.append(self.triangles[index],[[1.],[1.],[1.]], 1)
+        area = 0.5  * np.linalg.det(matrix)
+        return np.abs(area)
+
+    def totalArea(self):
+        sum = 0
+        for i in range(len(self.elements[0])):
+            sum += self.triangleArea(i)
+        return sum
+
+
     #     pass
     # class Triangle:
     #     def __init__(self, coordinates, elements):
@@ -95,8 +154,8 @@ class Mesh:
 
 
 #import file
-coord_data = np.genfromtxt("./data/coordinates_unitcircle_400.txt")
-elements = np.genfromtxt("./data/nodes_unitcircle_400.txt")
+coord_datas = np.genfromtxt("./data/coordinates_unitcircle_1024.txt")
+elementss = np.genfromtxt("./data/nodes_unitcircle_1024.txt")
 # print(coord_data)
 
 arr = np.array([[0, 0], [1, 0], [0, 1]
@@ -107,9 +166,15 @@ coor = np.array([[0., 1., 0.],
                  [0., 0., 1.]])
 # print(coor)
 
-# mesh = Mesh(coord_data, elements)
+mesh = Mesh(coord_datas, elementss)
+# print(mesh.totalArea())
 # print(mesh.minAngle(0))
 # mesh.plotTriangles()
+def func(x, y):
+    return 1
+
+print(mesh.approximanteIntegral(func))
+print(mesh.totalArea())
 
 # print(np.hsplit(arr, 2))
 # plt.fill(np.hsplit(arr,2)[0], np.hsplit(arr,2)[1])
