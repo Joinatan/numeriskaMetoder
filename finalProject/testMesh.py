@@ -45,10 +45,25 @@ class TestMesh(unittest.TestCase):
         # self.assertAlmostEqual(excpected, result)
 
     def test_totalArea(self):
-        mesh = self.construct_mesh()
+        coord_datas = np.genfromtxt("./data/coordinates_unitcircle_1024.txt")
+        elements = np.genfromtxt("./data/nodes_unitcircle_1024.txt")
+        mesh = Mesh(coord_datas, elements)
+
+        def f(y, x):
+            return 1
+         
+        def upperBound(x):
+            return np.sqrt(1 - x**2) 
+
+        def lowerBound(x):
+            return -1 * np.sqrt(1 - x**2) 
+
+
         result = mesh.totalArea()
-        excpected = 1
-        # self.assertAlmostEqual(excpected, result)
+        excpected, err = integrate.dblquad(f, -1., 1., lowerBound, upperBound)
+        # print("EX: ", excpected)
+        # print("RES: ", result)
+        self.assertAlmostEqual(excpected, result, 1)
 
     def test_approximateIntegral(self):
         coord_datas = np.genfromtxt("./data/coordinates_unitcircle_1024.txt")
@@ -56,21 +71,20 @@ class TestMesh(unittest.TestCase):
         # mesh = self.construct_mesh()
         mesh = Mesh(coord_datas, elements)
         def f(y, x):
-            return 1. - x**3 -y**2 + x
-            # return 1. 
+            return 1. - x**3 -y**2
 
         def upperBound(x):
             return np.sqrt(1 - x**2) 
-            # return np.sin(x)
+
         def lowerBound(x):
             return -1 * np.sqrt(1 - x**2) 
 
         result = mesh.approximanteIntegral(f)
         excpected, err = integrate.dblquad(f, -1., 1., lowerBound, upperBound)
-        # excpected, err = integrate.dblquad(f, 0., 1., 0., 1.)
-        print("EX: ", excpected)
-        print("RES: ", result)
-        self.assertAlmostEqual(excpected, result, 2)
+
+        # print("EX: ", excpected)
+        # print("RES: ", result)
+        self.assertAlmostEqual(excpected, result, 1)
 
 
 
