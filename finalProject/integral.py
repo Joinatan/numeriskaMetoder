@@ -69,20 +69,38 @@ class Mesh:
 
         return min(angleA, angleB, angleC)
 
-    def plotTriangles(self):
+    def calulateCenter(self, index):
+        centerX = (1/3) * (self.triangles[index][0][0] + self.triangles[index][1][0] + self.triangles[index][2][0])
+        centerY = (1/3) * (self.triangles[index][0][1] + self.triangles[index][1][1] + self.triangles[index][2][1])
+        return np.array([centerX, centerY])
+
+    def scaleTriangle(self, index, scaleFactor):
+        center = self.calulateCenter(index)
+        newTriangle = np.array([[0., 0.],[0., 0.],[0., 0.]])
+        for i in range(len(self.triangles[index])):
+            newTriangle[i][0] = ((self.triangles[index][i][0] - center[0]) * scaleFactor) + center[0]
+            newTriangle[i][1] = ((self.triangles[index][i][1] - center[1]) * scaleFactor) + center[1]
+        return newTriangle
+
+
+    def plotTriangles(self, scaleFactor = 1):
         # plt.fill(self.coordinates[0])
         colors = ('red', 'purple', 'black', 'pink', 'blue', 'orange')
         randNr = 0
         for i in range(len(self.triangles)):
+            #scale triangle
+            newTriangle = self.scaleTriangle(i, scaleFactor)
+
+            #random number for color
             randNr = np.random.randint(0, len(colors))
-            plt.fill(np.hsplit(self.triangles[i],2)[0], np.hsplit(self.triangles[i],2)[1], facecolor='none', edgecolor=colors[randNr], linestyle=(0,(5, 10)), linewidth=1)
-            # plt.fill(self.triangles[i])
+            # plt.fill(np.hsplit(self.triangles[i],2)[0], np.hsplit(self.triangles[i],2)[1], facecolor='none', edgecolor=colors[randNr], linewidth=1, sketch_params=0.2)
+            plt.fill(np.hsplit(newTriangle,2)[0], np.hsplit(newTriangle,2)[1], facecolor='none', edgecolor=colors[randNr], linewidth=1, sketch_params=0.2)
         plt.show()
 
     def __createTriangle(self):
         '''
         Stores each triangle in a matrix [[x1, y1],
-                                            [x2, y2]
+                                            [x2, y2]]
         '''
         # self.triangles = [len(self.coordinates[0])]
         # print("elements: ", self.elements[0])
@@ -169,7 +187,7 @@ coor = np.array([[0., 1., 0.],
 mesh = Mesh(coord_datas, elementss)
 # print(mesh.totalArea())
 # print(mesh.minAngle(0))
-# mesh.plotTriangles()
+# mesh.plotTriangles(0.8)
 def func(x, y):
     return 1
 

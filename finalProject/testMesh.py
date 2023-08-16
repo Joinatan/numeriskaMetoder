@@ -25,6 +25,7 @@ class TestMesh(unittest.TestCase):
         excpected = np.pi/4.
         self.assertAlmostEqual(excpected, result)
         # print(angle)
+
     def test_plotTriangles(self):
         mesh = self.construct_mesh()
         mesh.plotTriangles()
@@ -50,17 +51,26 @@ class TestMesh(unittest.TestCase):
         # self.assertAlmostEqual(excpected, result)
 
     def test_approximateIntegral(self):
-        mesh = self.construct_mesh()
+        coord_datas = np.genfromtxt("./data/coordinates_unitcircle_1024.txt")
+        elements = np.genfromtxt("./data/nodes_unitcircle_1024.txt")
+        # mesh = self.construct_mesh()
+        mesh = Mesh(coord_datas, elements)
         def f(y, x):
-            return 1. - x**2 -y**2
+            return 1. - x**3 -y**2 + x
+            # return 1. 
+
+        def upperBound(x):
+            return np.sqrt(1 - x**2) 
+            # return np.sin(x)
+        def lowerBound(x):
+            return -1 * np.sqrt(1 - x**2) 
+
         result = mesh.approximanteIntegral(f)
-        excpected, err = integrate.dblquad(f, 0., 1., 0., 1.)
+        excpected, err = integrate.dblquad(f, -1., 1., lowerBound, upperBound)
+        # excpected, err = integrate.dblquad(f, 0., 1., 0., 1.)
         print("EX: ", excpected)
         print("RES: ", result)
-        self.assertAlmostEqual(excpected, result)
-
-
-        pass
+        self.assertAlmostEqual(excpected, result, 2)
 
 
 
